@@ -1,0 +1,169 @@
+Secure PHP Project with .env and Composer – Step-by-Step Guide
+
+📌 Table of Contents
+
+1. Project Setup
+2. Installing Composer & Dependencies
+3. Setting Up Environment Variables (.env)
+4. Creating a Secure Database Connection (config.php)
+5. Implementing .env in a PHP Project
+6. Security Best Practices
+7. Testing the Connection
+
+
+1. Project Setup
+🛠 Step 1: Create Your Project Folder
+
+Navigate to your web server directory (htdocs for XAMPP) and create a new project:
+
+cd C:\xampp\htdocs\
+mkdir OwnStructureOfCodePHP
+cd OwnStructureOfCodePHP
+
+🛠 Step 2: Initialize Composer
+Inside your project folder, run:
+
+composer init
+
+Composer will ask for details. Use these recommended values:
+
+Prompt                        Recommended Value
+Package name                  admin/own-structure-of-code-php
+Description                   A structured PHP project with .env security
+Author                        Your name & email
+Minimum Stability             stable
+License                       MIT (or leave blank)
+
+
+2. Installing Composer & Dependencies
+🛠 Step 3: Install PHP dotenv
+To securely manage database credentials, install:
+
+composer require vlucas/phpdotenv
+
+This creates a composer.json file and downloads required dependencies into the vendor/ folder.
+
+3. Setting Up Environment Variables (.env)
+
+🛠 Step 4: Create a .env File
+Inside OwnStructureOfCodePHP, create a .env file:
+
+touch .env  # On macOS/Linux
+notepad .env  # On Windows (or use any editor)
+
+Add your database credentials:
+
+DB_HOST=localhost
+DB_NAME=super_secure_db
+DB_USER=root
+DB_PASS=yourpassword
+DB_PORT=3306
+
+4. Creating a Secure Database Connection (config.php)
+Inside your project, organize files properly:
+
+mkdir -p App/Config
+touch App/Config/config.php
+
+Now, edit App/Config/config.php and add the following secure database connection:
+
+<?php
+require_once __DIR__ . '/../../vendor/autoload.php'; // Load Composer autoload
+
+use Dotenv\Dotenv;
+
+// Load .env file
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv->load();
+
+// Securely fetch database credentials
+$db_host = $_ENV['DB_HOST'];
+$db_name = $_ENV['DB_NAME'];
+$db_user = $_ENV['DB_USER'];
+$db_pass = $_ENV['DB_PASS'];
+$db_port = $_ENV['DB_PORT'];
+
+// Secure PDO connection
+try {
+    $dsn = "mysql:host=$db_host;dbname=$db_name;port=$db_port;charset=utf8mb4";
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+    $pdo = new PDO($dsn, $db_user, $db_pass, $options);
+} catch (PDOException $e) {
+    error_log("Database Connection Error: " . $e->getMessage()); // Log error instead of displaying it
+    die("\u274c Database connection failed. Please check logs.");
+}
+
+5. Implementing .env in a PHP Project
+
+🛠 Step 6: Modify public/index.php to Use Database Connection
+
+Create a public/ folder for all publicly accessible files:
+
+
+mkdir public
+touch public/index.php
+
+
+Now, edit public/index.php:
+
+<?php
+require_once __DIR__ . '/../App/Config/config.php';
+
+// Example query
+$stmt = $pdo->query("SELECT NOW() as current_time");
+$result = $stmt->fetch();
+
+echo "\u2705 Database Connected! Current Time: " . $result['current_time'];
+
+6. Security Best Practices
+🛠 Step 7: Prevent Public Access to .env
+
+If using Apache, add this to your .htaccess file:
+
+<FilesMatch "^\.env">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+🛠 Step 8: Ignore .env in Git
+
+If using Git, add .env to .gitignore:
+
+echo ".env" >> .gitignore
+
+
+7. Testing the Connection
+
+🛠 Step 9: Start XAMPP & Run the Project
+
+1. Open XAMPP Control Panel
+
+2. Start Apache and MySQL
+
+3. Open your browser and visit:
+http://localhost/OwnStructureOfCodePHP/public/index.php
+
+If everything is set up correctly, you should see:
+
+✅ Database Connected! Current Time: 2024-02-28 12:30:00
+
+🛠 Step 10: Verify .env is Working
+
+Run this command inside your project:
+
+php -r "require 'vendor/autoload.php'; var_dump($_ENV['DB_HOST']);"
+
+✅ If it prints string(9) "localhost", your .env file is loading correctly! 🚀
+
+
+🎯 Final Security Checklist
+
+✔ Store database credentials in .env, NOT in PHP files
+✔ Block public access to .env using .htaccess
+✔ Exclude .env from Git using .gitignore
+✔ Use PDO with prepared statements to prevent SQL injection
+✔ Keep config.php outside public access
